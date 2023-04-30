@@ -1,0 +1,11 @@
+[package]
+name = "rdb"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "rdb"
+path = "src/rdb.rs"
+
+[profile.release]
+strip = true
