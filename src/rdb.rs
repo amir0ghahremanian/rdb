@@ -61,17 +61,17 @@ pub mod db {
 	    			fl_name: fl_name })
     	}
 
-		fn lines_proc(fl: &mut File, line_no: &mut u64) { // no threading yet
+		fn lines_proc(fl: &mut File, line_no: &mut u64) { // no multi-threading yet
 			let (mut i, mut b, mut ch): (u64, usize, [u8; 1]) = (0, 0, [0]);
-			fl.seek(Start(0));
+			fl.seek(Start(0)).unwrap();
 			let start_pos = fl.stream_position().unwrap();
-			fl.seek(End(0));
+			fl.seek(End(0)).unwrap();
 			let end_pos = fl.stream_position().unwrap();
 			if end_pos == start_pos { *line_no = 0; return(); }
-			fl.seek(Current(-1));
-			fl.read(&mut ch);
-			if ch[0] != 10 { fl.write(&10_u8.to_le_bytes()); }
-			fl.seek(Start(0));
+			fl.seek(Current(-1)).unwrap();
+			fl.read(&mut ch).unwrap();
+			if ch[0] != 10 { fl.write(&10_u8.to_le_bytes()).unwrap(); }
+			fl.seek(Start(0)).unwrap();
 			loop {
 				b = fl.read(&mut ch).unwrap();
 				if b == 0 { break; }
@@ -82,26 +82,26 @@ pub mod db {
 		}
 
 		fn seek_line(&mut self, line_no: u64) {
-			self.fl.seek(Start(0)); // file < line_no is not dealt with
+			self.fl.seek(Start(0)).unwrap(); // file < line_no is not dealt with
 			if line_no == 1 || line_no == 0 { return(); }
-			self.id.seek(Start(8 * (line_no - 2)));
+			self.id.seek(Start(8 * (line_no - 2))).unwrap();
 			let mut record_pos: [u8; 8] = [0; 8];
 			match self.id.read(&mut record_pos) {
 				Ok(ret) => { if ret != 8 { panic!("Error reading id!"); } }
 				Err(_) => { panic!("Error reading id!"); }
 			}
 			let record_pos = u64::from_le_bytes(record_pos);
-			self.fl.seek(Start(record_pos));
+			self.fl.seek(Start(record_pos)).unwrap();
 			return();
 		}
 
     	pub fn append_entry(&mut self, ent: Entry) {
-			self.fl.seek(End(0));
+			self.fl.seek(End(0)).unwrap();
 			for (i, prop) in ent.iter().enumerate() {
-	    		self.fl.write(prop.as_bytes());
-	    		if (i+1) != ent.len() { self.fl.write(&30_u8.to_le_bytes()); }
+	    		self.fl.write(prop.as_bytes()).unwrap();
+	    		if (i+1) != ent.len() { self.fl.write(&30_u8.to_le_bytes()).unwrap(); }
 			}
-			self.fl.write(&10_u8.to_le_bytes());
+			self.fl.write(&10_u8.to_le_bytes()).unwrap();
 			self.entno += 1;
 			return();
     	}
@@ -115,7 +115,7 @@ pub mod db {
 	    		let (mut ch, mut done): ([u8; 1], bool) = ([0], false);
 	    		loop {
 					ch[0] = 0;
-					self.fl.read(&mut ch);
+					self.fl.read(&mut ch).unwrap();
 					if ch[0] == 30 { break; }
 					else if ch[0] == 10 { done = true; break; }
 					str_buff.push(ch[0] as char);
@@ -142,9 +142,9 @@ pub mod db {
 		    			.write(true).create(true).open(cid).unwrap();
 					let mut t_fl = OpenOptions::new().read(true)
 		    			.open(fl_name).unwrap();
-					t_fl.seek(End(0));
+					t_fl.seek(End(0)).unwrap();
 					let end_pos = t_fl.stream_position().unwrap();
-					t_fl.seek(Start(ct_no as u64*(end_pos / tt_no as u64)));
+					t_fl.seek(Start(ct_no as u64*(end_pos / tt_no as u64))).unwrap();
 					let end_pos = {
 		    			if ct_no == tt_no - 1 { end_pos }
 		    			else { (ct_no + 1) as u64*(end_pos / tt_no as u64) }
@@ -152,10 +152,10 @@ pub mod db {
 					let mut curr_pos = t_fl.stream_position().unwrap();
 					let mut ch: [u8; 1] = [0];
 					loop {
-		    			t_fl.read(&mut ch);
+		    			t_fl.read(&mut ch).unwrap();
 		    			curr_pos += 1;
 		    			if ch[0] == 10 {
-							cid.write(&curr_pos.to_le_bytes());
+							cid.write(&curr_pos.to_le_bytes()).unwrap();
 		    			}
 		    			if curr_pos == end_pos { break; }
 					}
@@ -164,7 +164,7 @@ pub mod db {
 			}
 			for _ in 0..t_no {
 	    		handle = handle_vec.pop().unwrap();
-	    		handle.join();
+	    		handle.join().unwrap();
 			}
 			for i in 0..t_no {
 	    		let mut id_name = String::from("id");
@@ -176,10 +176,10 @@ pub mod db {
 	    		loop {
 					b = id.read(&mut record).unwrap();
 					if b == 0 { break; }
-					index_rec.write(&record);
+					index_rec.write(&record).unwrap();
 	    		}
 	    		drop(id);
-	    		fs::remove_file(id_name);
+	    		fs::remove_file(id_name).unwrap();
 			}
 			return();
     	}
