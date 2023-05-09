@@ -5,7 +5,7 @@ edition = "2021"
 
 [lib]
 name = "rdb"
-path = "src/rdb.rs"
+path = "src/lib.rs"
 
 [dependencies]
 

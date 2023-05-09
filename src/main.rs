@@ -1,6 +1,4 @@
-mod rdb;
-
-use crate::rdb::db::Db;
+use rdb::db::Db;
 
 fn main() {
     let mut mydb = Db::open("mydb").unwrap();
